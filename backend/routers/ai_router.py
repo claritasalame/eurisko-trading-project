@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from database import get_db
 from schemas import AIQueryRequest, AIQueryResponse, NewsSearchRequest, NewsSearchResponse
+from services.copilot import answer_query
 from services.embeddings import embed_text
 from services.qdrant_client import search_news
 
@@ -8,11 +11,8 @@ router = APIRouter()
 
 
 @router.post("/query", response_model=AIQueryResponse)
-def query_ai(payload: AIQueryRequest):
-    return {
-        "answer": f"This is a placeholder AI response for: {payload.query}",
-        "status": "ok",
-    }
+def query_ai(payload: AIQueryRequest, db: Session = Depends(get_db)):
+    return answer_query(payload.query, payload.symbol, db)
 
 
 @router.post("/search-news", response_model=NewsSearchResponse)

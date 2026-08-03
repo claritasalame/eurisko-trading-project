@@ -22,7 +22,7 @@ class AuthToken(BaseModel):
 
 
 class ChatSessionCreate(BaseModel):
-    user_id: UUID
+    user_id: Optional[UUID] = None
 
 
 class ChatSessionResponse(BaseModel):
@@ -32,8 +32,8 @@ class ChatSessionResponse(BaseModel):
 
 
 class ChatMessageCreate(BaseModel):
-    role: str
     content: str
+    symbol: Optional[str] = None
 
 
 class ChatMessageResponse(BaseModel):
@@ -67,12 +67,33 @@ class IndicatorResponse(BaseModel):
 
 class AIQueryRequest(BaseModel):
     query: str
-    context: Optional[List[str]] = None
+    symbol: Optional[str] = None
+
+
+class CopilotSource(BaseModel):
+    title: str
+    url: str
+    source: str
+
+
+class CopilotQuote(BaseModel):
+    symbol: str
+    price: float
+    day_change_percent: float
+    volume: Optional[int] = None
+    fetched_at: str
 
 
 class AIQueryResponse(BaseModel):
     answer: str
-    status: str = "ok"
+    sources: List[CopilotSource]
+    quote: Optional[CopilotQuote] = None
+
+
+class ChatAssistantResponse(ChatMessageResponse):
+    answer: str
+    sources: List[CopilotSource]
+    quote: Optional[CopilotQuote] = None
 
 
 class NewsSearchRequest(BaseModel):

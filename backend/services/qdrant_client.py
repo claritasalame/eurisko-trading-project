@@ -62,6 +62,7 @@ def search_news(query_vector: list[float], symbol: str | None = None, top_k: int
             "url": point.payload.get("url"),
             "published_at": point.payload.get("published_at"),
             "symbol": point.payload.get("symbol"),
+            "snippet": point.payload.get("chunk_text"),
         }
         for point in results
     ]
