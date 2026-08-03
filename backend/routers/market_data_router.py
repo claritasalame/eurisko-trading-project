@@ -1,15 +1,19 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
 
+from database import get_db
 from schemas import IndicatorResponse, QuoteResponse
+from services.market_data import WATCHLIST_SYMBOLS, fetch_quote, ingest_watchlist_data
 
 router = APIRouter()
 
 
 @router.get("/quote/{symbol}", response_model=QuoteResponse)
 def get_quote(symbol: str):
+    quote = fetch_quote(symbol)
     return {
-        "symbol": symbol.upper(),
-        "price": 100.0,
+        "symbol": quote["symbol"],
+        "price": quote["price"],
         "currency": "USD",
     }
 
@@ -23,3 +27,8 @@ def get_indicators(symbol: str):
             "moving_average": 100.0,
         },
     }
+
+
+@router.post("/ingest/run")
+def run_ingest(db: Session = Depends(get_db)):
+    return ingest_watchlist_data(WATCHLIST_SYMBOLS, db)

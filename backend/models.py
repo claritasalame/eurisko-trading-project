@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Column, DateTime, Float, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -41,6 +41,17 @@ class ChatMessage(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     chat_session = relationship("ChatSession", back_populates="messages")
+
+
+class MarketData(Base):
+    __tablename__ = "market_data"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    symbol = Column(String(32), nullable=False, index=True)
+    price = Column(Float, nullable=False)
+    day_change_percent = Column(Float, nullable=False)
+    volume = Column(BigInteger, nullable=True)
+    fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 
 class NewsArticle(Base):

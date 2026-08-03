@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from database import Base
-from models import ChatMessage, ChatSession, NewsArticle, User, Watchlist
+from models import ChatMessage, ChatSession, MarketData, NewsArticle, User, Watchlist
 from config import DATABASE_URL
 
 config = context.config

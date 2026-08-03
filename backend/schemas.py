@@ -73,3 +73,21 @@ class AIQueryRequest(BaseModel):
 class AIQueryResponse(BaseModel):
     answer: str
     status: str = "ok"
+
+
+class NewsSearchRequest(BaseModel):
+    query: str
+    symbol: Optional[str] = None
+
+
+class NewsSearchResult(BaseModel):
+    title: str
+    source: str
+    url: str
+    published_at: Optional[str] = None
+    relevance_score: float
+    symbol: Optional[str] = None
+
+
+class NewsSearchResponse(BaseModel):
+    results: List[NewsSearchResult]

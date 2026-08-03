@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -7,6 +8,10 @@ from sqlalchemy import text
 from config import PORT
 from database import engine
 from routers import ai_router, auth_router, chat_router, market_data_router, news_router
+from services.market_data import run_watchlist_ingestion
+from services.qdrant_client import ensure_news_collection
+
+scheduler = BackgroundScheduler()
 
 
 @asynccontextmanager
@@ -18,7 +23,25 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         print(f"Postgres connection check failed: {exc}")
         raise
+
+    try:
+        ensure_news_collection()
+        scheduler.add_job(
+            func=run_watchlist_ingestion,
+            trigger="interval",
+            minutes=15,
+            id="market_data_ingest",
+            replace_existing=True,
+        )
+        scheduler.start()
+        print("Market ingestion scheduler started")
+    except Exception as exc:
+        print(f"Scheduler startup failed: {exc}")
+
     yield
+
+    if scheduler.running:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="eurisko-trading-project", lifespan=lifespan)
