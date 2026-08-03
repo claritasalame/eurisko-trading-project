@@ -57,6 +57,9 @@ class NewsArticleResponse(BaseModel):
 class QuoteResponse(BaseModel):
     symbol: str
     price: float
+    day_change_percent: float
+    volume: Optional[int] = None
+    fetched_at: str
     currency: str = "USD"
 
 

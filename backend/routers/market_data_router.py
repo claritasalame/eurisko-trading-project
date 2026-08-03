@@ -12,8 +12,7 @@ router = APIRouter()
 def get_quote(symbol: str):
     quote = fetch_quote(symbol)
     return {
-        "symbol": quote["symbol"],
-        "price": quote["price"],
+        **quote,
         "currency": "USD",
     }
 
