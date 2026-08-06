@@ -1,8 +1,8 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional, List
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UserCreate(BaseModel):
@@ -111,6 +111,53 @@ class NewsSearchResult(BaseModel):
     published_at: Optional[str] = None
     relevance_score: float
     symbol: Optional[str] = None
+
+
+class StockResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    symbol: str
+    name: Optional[str] = None
+    exchange: Optional[str] = None
+    currency: Optional[str] = None
+    sector: Optional[str] = None
+    industry: Optional[str] = None
+    country: Optional[str] = None
+    market_cap: Optional[int] = None
+    website: Optional[str] = None
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class HistoricalPriceResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    date: date
+    open: float
+    high: float
+    low: float
+    close: float
+    adjusted_close: float
+    volume: Optional[int] = None
+
+
+class TechnicalIndicatorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    date: date
+    rsi: Optional[float] = None
+    sma_20: Optional[float] = None
+    sma_50: Optional[float] = None
+    ema_20: Optional[float] = None
+    ema_50: Optional[float] = None
+    macd: Optional[float] = None
+    macd_signal: Optional[float] = None
+    macd_histogram: Optional[float] = None
+    bollinger_upper: Optional[float] = None
+    bollinger_middle: Optional[float] = None
+    bollinger_lower: Optional[float] = None
+    atr: Optional[float] = None
+    adx: Optional[float] = None
+    obv: Optional[float] = None
 
 
 class NewsSearchResponse(BaseModel):
