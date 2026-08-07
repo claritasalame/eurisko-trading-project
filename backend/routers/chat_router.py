@@ -30,7 +30,8 @@ def create_chat_session(payload: ChatSessionCreate, db: Session = Depends(get_db
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
 def get_session_messages(session_id: UUID, db: Session = Depends(get_db)):
-    if db.get(ChatSession, session_id) is None:
+    chat_session = db.get(ChatSession, session_id)
+    if chat_session is None:
         raise HTTPException(status_code=404, detail="Chat session not found")
     return (
         db.query(ChatMessage)
@@ -42,12 +43,13 @@ def get_session_messages(session_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatAssistantResponse)
 def create_session_message(session_id: UUID, payload: ChatMessageCreate, db: Session = Depends(get_db)):
-    if db.get(ChatSession, session_id) is None:
+    chat_session = db.get(ChatSession, session_id)
+    if chat_session is None:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
     user_message = ChatMessage(chat_session_id=session_id, role="user", content=payload.content)
     db.add(user_message)
-    result = answer_query(payload.content, payload.symbol, db)
+    result = answer_query(payload.content, payload.symbol, db, user_id=chat_session.user_id)
     assistant_message = ChatMessage(chat_session_id=session_id, role="assistant", content=result["answer"])
     db.add(assistant_message)
     db.commit()

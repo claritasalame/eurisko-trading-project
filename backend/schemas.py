@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Literal, Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -71,6 +71,7 @@ class IndicatorResponse(BaseModel):
 class AIQueryRequest(BaseModel):
     query: str
     symbol: Optional[str] = None
+    user_id: Optional[UUID] = None
 
 
 class CopilotSource(BaseModel):
@@ -162,3 +163,37 @@ class TechnicalIndicatorResponse(BaseModel):
 
 class NewsSearchResponse(BaseModel):
     results: List[NewsSearchResult]
+
+
+class UserProfileUpdate(BaseModel):
+    cash_balance: float
+    risk_tolerance: Literal["conservative", "moderate", "aggressive"]
+    investment_goals: str
+    experience_level: Literal["beginner", "intermediate", "advanced"]
+
+
+class UserProfileResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    user_id: UUID
+    cash_balance: float
+    risk_tolerance: Optional[str] = None
+    investment_goals: Optional[str] = None
+    experience_level: Optional[str] = None
+    updated_at: datetime
+
+
+class HoldingCreate(BaseModel):
+    symbol: str = Field(min_length=1, max_length=32)
+    quantity: float = Field(gt=0)
+    average_cost_basis: float = Field(ge=0)
+
+
+class HoldingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    user_id: UUID
+    symbol: str
+    quantity: float
+    average_cost_basis: float
+    created_at: datetime

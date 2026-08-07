@@ -38,6 +38,8 @@ class User(Base):
 
     chat_sessions = relationship("ChatSession", back_populates="user")
     watchlists = relationship("Watchlist", back_populates="user")
+    profile = relationship("UserProfile", back_populates="user", uselist=False)
+    holdings = relationship("Holding", back_populates="user")
 
 
 class ChatSession(Base):
@@ -101,11 +103,49 @@ class Watchlist(Base):
     )
 
 
+class UserProfile(Base):
+    __tablename__ = "user_profiles"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    cash_balance = Column(Float, default=0.0, nullable=False)
+    risk_tolerance = Column(String(32), nullable=True)
+    investment_goals = Column(Text, nullable=True)
+    experience_level = Column(String(32), nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="profile")
+
+    __table_args__ = (
+        CheckConstraint(
+            "risk_tolerance IS NULL OR risk_tolerance IN ('conservative', 'moderate', 'aggressive')",
+            name="ck_user_profiles_risk_tolerance",
+        ),
+        CheckConstraint(
+            "experience_level IS NULL OR experience_level IN ('beginner', 'intermediate', 'advanced')",
+            name="ck_user_profiles_experience_level",
+        ),
+    )
+
+
+class Holding(Base):
+    __tablename__ = "holdings"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    symbol = Column(String(32), nullable=False)
+    quantity = Column(Float, nullable=False)
+    average_cost_basis = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    user = relationship("User", back_populates="holdings")
+
+
 class Stock(Base):
     __tablename__ = "stocks"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    symbol = Column(String(32), unique=True, nullable=False, index=True)
+    symbol = Column(String(32), unique=True, nullable=False)
     name = Column(String(255), nullable=True)
     exchange = Column(String(64), nullable=True)
     currency = Column(String(16), nullable=True)
@@ -130,7 +170,7 @@ class HistoricalPrice(Base):
     __tablename__ = "historical_prices"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    stock_id = Column(UUID(as_uuid=True), ForeignKey("stocks.id"), nullable=False, index=True)
+    stock_id = Column(UUID(as_uuid=True), ForeignKey("stocks.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False)
     open = Column(Numeric(12, 4), nullable=False)
     high = Column(Numeric(12, 4), nullable=False)
@@ -158,7 +198,7 @@ class TechnicalIndicator(Base):
     __tablename__ = "technical_indicators"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    stock_id = Column(UUID(as_uuid=True), ForeignKey("stocks.id"), nullable=False, index=True)
+    stock_id = Column(UUID(as_uuid=True), ForeignKey("stocks.id", ondelete="CASCADE"), nullable=False, index=True)
     date = Column(Date, nullable=False)
     rsi = Column(Float, nullable=True)
     sma_20 = Column(Float, nullable=True)

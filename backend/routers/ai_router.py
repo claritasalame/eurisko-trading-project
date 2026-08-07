@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.post("/query", response_model=AIQueryResponse)
 def query_ai(payload: AIQueryRequest, db: Session = Depends(get_db)):
-    return answer_query(payload.query, payload.symbol, db)
+    return answer_query(payload.query, payload.symbol, db, user_id=payload.user_id)
 
 
 @router.post("/search-news", response_model=NewsSearchResponse)
