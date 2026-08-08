@@ -11,7 +11,7 @@ except ModuleNotFoundError:
         sys.path.insert(0, str(backend_root))
     from backend.services.technical_indicator_service import calculate_indicators_for_symbols
 
-DEMO_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "AMZN", "META"]
+DEMO_SYMBOLS = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA", "AMZN", "META", "BTC-USD", "GC=F", "EURUSD=X", "^GSPC"]
 
 
 if __name__ == "__main__":
