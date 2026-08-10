@@ -1,0 +1,119 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getQuote } from "@/lib/api";
+import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
+
+const watchlistSeed = [
+  { symbol: "AAPL", company: "Apple", price: 214.12, day_change_percent: 1.42 },
+  { symbol: "MSFT", company: "Microsoft", price: 462.8, day_change_percent: -0.61 },
+  { symbol: "NVDA", company: "NVIDIA", price: 127.24, day_change_percent: 2.1 },
+  { symbol: "TSLA", company: "Tesla", price: 211.54, day_change_percent: -1.24 },
+];
+
+export function WatchlistRail() {
+  const [watchlist, setWatchlist] = useState(watchlistSeed);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const loadWatchlist = async () => {
+      try {
+        const quotes = await Promise.all(
+          watchlistSeed.map(async (item) => {
+            const response = await getQuote(item.symbol);
+            return {
+              ...item,
+              price: response.price,
+              day_change_percent: response.day_change_percent,
+            };
+          }),
+        );
+
+        setWatchlist(quotes);
+        setHasError(false);
+      } catch {
+        setHasError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadWatchlist();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <aside className="panel h-fit p-3">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-[family-name:var(--font-display)] text-sm tracking-[0.14em] text-[var(--text-muted)]">
+            WATCHLIST
+          </h2>
+        </div>
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="skeleton-row rounded-lg" />
+          ))}
+        </div>
+      </aside>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <aside className="panel h-fit p-3">
+        <p className="text-sm text-[var(--text-muted)]">Couldn&apos;t load quotes right now.</p>
+      </aside>
+    );
+  }
+
+  return (
+    <aside className="panel h-fit p-3">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="font-[family-name:var(--font-display)] text-sm tracking-[0.14em] text-[var(--text-muted)]">
+          WATCHLIST
+        </h2>
+        <span className="text-[var(--text-muted)]">{watchlist.length}</span>
+      </div>
+
+      {watchlist.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[var(--border-hairline)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+          <div className="mb-2 text-lg">⌕</div>
+          No symbols yet. Search above to add one.
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {watchlist.map((item) => {
+            const hasChange = isFiniteNumber(item.day_change_percent);
+            const positive = hasChange && item.day_change_percent >= 0;
+            return (
+              <button
+                key={item.symbol}
+                type="button"
+                className="focus-visible-ring flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--bg-surface-raised)]"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-[family-name:var(--font-data)] text-sm text-[var(--text-primary)]">
+                      {item.symbol}
+                    </span>
+                    <span className="font-[family-name:var(--font-data)] text-xs text-[var(--text-muted)]">
+                      {formatPrice(item.price)}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
+                    <span className="truncate text-[var(--text-muted)]">{item.company}</span>
+                    <span className={positive ? "text-[var(--positive)]" : "text-[var(--negative)]"}>
+                      {hasChange ? <span className="mr-1">{positive ? "▲" : "▼"}</span> : null}
+                      {formatPercent(item.day_change_percent)}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </aside>
+  );
+}

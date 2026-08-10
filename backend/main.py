@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 from config import PORT
 from database import engine
-from routers import ai_router, auth_router, chat_router, market_data_router, news_router, profile_router, stocks_router
+from routers import admin_router, ai_router, auth_router, chat_router, market_data_router, news_router, profile_router, stocks_router
 from services.market_data import run_watchlist_ingestion
 from services.qdrant_client import ensure_news_collection
 
@@ -61,6 +61,7 @@ app.include_router(market_data_router.router, prefix="/api/market-data", tags=["
 app.include_router(ai_router.router, prefix="/api/ai", tags=["ai"])
 app.include_router(stocks_router.router, prefix="/api/stocks", tags=["stocks"])
 app.include_router(profile_router.router, prefix="/api/profile", tags=["profile"])
+app.include_router(admin_router.router, prefix="/api/admin", tags=["admin"])
 
 
 @app.get("/health")

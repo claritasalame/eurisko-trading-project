@@ -14,7 +14,12 @@ class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     email: str
+    is_admin: bool
     created_at: datetime
+
+
+class AdminUserResponse(UserResponse):
+    pass
 
 
 class AuthToken(BaseModel):
@@ -198,3 +203,8 @@ class HoldingResponse(BaseModel):
     quantity: float
     average_cost_basis: float
     created_at: datetime
+
+
+class AdminProfileResponse(BaseModel):
+    profile: Optional[UserProfileResponse] = None
+    holdings: List[HoldingResponse]

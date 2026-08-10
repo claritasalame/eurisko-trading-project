@@ -4,7 +4,7 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from config import OPENAI_API_KEY
-from models import Holding, UserProfile
+from models import ChatMessage, ChatSession, Holding, UserProfile
 from services.embeddings import embed_text
 from services.market_data import fetch_quote
 from services.qdrant_client import search_news
@@ -18,6 +18,7 @@ def build_context_prompt(
     news_items: list[dict],
     quote: dict | None,
     user_context: str | None = None,
+    conversation_context: str | None = None,
 ) -> str:
     sections = [f"User question: {query}", "", "Retrieved news context:"]
     if news_items:
@@ -48,7 +49,38 @@ def build_context_prompt(
     if user_context is not None:
         sections.extend(["", "User profile and portfolio context:", user_context])
 
+    if conversation_context:
+        sections.extend(["", "Prior conversation context:", conversation_context])
+
     sections.extend(["", "Answer the user using only this context and cite relevant numbered items."])
+    return "\n".join(sections)
+
+
+def build_conversation_context(user_id, db: Session) -> str | None:
+    messages = (
+        db.query(ChatMessage)
+        .join(ChatSession, ChatMessage.chat_session_id == ChatSession.id)
+        .filter(ChatSession.user_id == user_id)
+        .order_by(ChatMessage.created_at.desc(), ChatMessage.id.desc())
+        .limit(20)
+        .all()
+    )
+    if not messages:
+        return None
+
+    chronological = list(reversed(messages))
+    older = chronological[:-10]
+    recent = chronological[-10:]
+    sections: list[str] = []
+    if older:
+        older_user_topics = [message.content.strip().replace("\n", " ")[:80] for message in older if message.role == "user"]
+        if older_user_topics:
+            sections.append("Earlier topics included: " + "; ".join(older_user_topics[:4]))
+        else:
+            sections.append("There are additional older conversation messages not shown here.")
+    sections.append("Recent messages:")
+    for message in recent:
+        sections.append(f"{message.role.title()}: {message.content.strip()[:600]}")
     return "\n".join(sections)
 
 
@@ -103,7 +135,8 @@ def answer_query(query: str, symbol: str | None, db: Session, user_id=None) -> d
     news_items = search_news(query_vector, symbol=normalized_symbol, top_k=5)
     quote = fetch_quote(normalized_symbol) if normalized_symbol else None
     user_context = build_user_context(user_id, db) if user_id is not None else None
-    prompt = build_context_prompt(query, news_items, quote, user_context)
+    conversation_context = build_conversation_context(user_id, db) if user_id is not None else None
+    prompt = build_context_prompt(query, news_items, quote, user_context, conversation_context)
 
     client = OpenAI(api_key=OPENAI_API_KEY)
     response = client.chat.completions.create(

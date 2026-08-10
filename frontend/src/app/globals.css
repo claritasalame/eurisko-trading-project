@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+@import "tailwindcss";
+
+:root {
+  --bg-base: #0A0E17;
+  --bg-surface: #10141F;
+  --bg-surface-hover: #171C2B;
+  --border-hairline: #232838;
+  --text-primary: #F1F3F8;
+  --text-muted: #8891A3;
+  --accent-teal: #38BDF8;
+  --accent-signal: var(--accent-teal);
+  --accent-violet: #A78BFA;
+  --positive: #34D399;
+  --negative: #F87171;
+  --neutral-badge-bg: #232838;
+  --font-display: "Space Grotesk", Arial, sans-serif;
+  --font-ui: "Inter", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", "JetBrains Mono", monospace;
+}
+
+@theme inline {
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-data);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(56, 189, 248, 0.1), transparent 24%),
+    var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+}
+
+.panel {
+  border: 1px solid var(--border-hairline);
+  border-radius: 18px;
+  background: var(--bg-surface);
+  box-shadow: 0 22px 50px rgba(11, 14, 20, 0.45);
+}
+
+.focus-visible-ring {
+  outline: none;
+}
+
+.focus-visible-ring:focus-visible {
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.4);
+}
+
+.font-\[family-name\:var\(--font-display\)\] {
+  font-family: var(--font-display);
+}
+
+.font-\[family-name\:var\(--font-data\)\] {
+  font-family: var(--font-data);
+  font-variant-numeric: tabular-nums;
+}
+
+.skeleton-row,
+.skeleton-card,
+.skeleton-chart {
+  background: linear-gradient(90deg, rgba(23, 28, 43, 0.7), rgba(35, 40, 56, 0.95), rgba(23, 28, 43, 0.7));
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+.skeleton-chart {
+  min-height: 280px;
+}
+
+.idle-cursor {
+  animation: idlePulse 2.4s ease-in-out infinite;
+}
+
+.chatbot-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  animation: pulseRing 2.6s ease-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes idlePulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.18);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.12);
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.98);
+    opacity: 0.7;
+  }
+  70% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .idle-cursor,
+  .chatbot-pulse::before,
+  .skeleton-row,
+  .skeleton-card,
+  .skeleton-chart {
+    animation: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
