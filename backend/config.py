@@ -9,4 +9,6 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://dev:devpassword@postgres:
 QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret")
+JWT_ALGORITHM = "HS256"
+JWT_ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 PORT = int(os.getenv("PORT", "4000"))

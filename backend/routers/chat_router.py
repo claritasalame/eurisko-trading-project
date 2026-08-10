@@ -1,4 +1,3 @@
-import uuid
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,20 +7,14 @@ from database import get_db
 from models import ChatMessage, ChatSession, User
 from schemas import ChatAssistantResponse, ChatMessageCreate, ChatMessageResponse, ChatSessionCreate, ChatSessionResponse
 from services.copilot import answer_query
+from services.auth import get_current_user
 
 router = APIRouter()
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
-def create_chat_session(payload: ChatSessionCreate, db: Session = Depends(get_db)):
-    user = db.get(User, payload.user_id) if payload.user_id else None
-    if user is None:
-        user_id = payload.user_id or uuid.uuid4()
-        user = User(id=user_id, email=f"demo-{user_id}@local.invalid", password="demo-user-no-login")
-        db.add(user)
-        db.flush()
-
-    session = ChatSession(user_id=user.id)
+def create_chat_session(payload: ChatSessionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    session = ChatSession(user_id=current_user.id)
     db.add(session)
     db.commit()
     db.refresh(session)
@@ -29,9 +22,9 @@ def create_chat_session(payload: ChatSessionCreate, db: Session = Depends(get_db
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageResponse])
-def get_session_messages(session_id: UUID, db: Session = Depends(get_db)):
+def get_session_messages(session_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     chat_session = db.get(ChatSession, session_id)
-    if chat_session is None:
+    if chat_session is None or chat_session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Chat session not found")
     return (
         db.query(ChatMessage)
@@ -42,9 +35,9 @@ def get_session_messages(session_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.post("/sessions/{session_id}/messages", response_model=ChatAssistantResponse)
-def create_session_message(session_id: UUID, payload: ChatMessageCreate, db: Session = Depends(get_db)):
+def create_session_message(session_id: UUID, payload: ChatMessageCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     chat_session = db.get(ChatSession, session_id)
-    if chat_session is None:
+    if chat_session is None or chat_session.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="Chat session not found")
 
     user_message = ChatMessage(chat_session_id=session_id, role="user", content=payload.content)
