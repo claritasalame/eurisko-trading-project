@@ -268,7 +268,7 @@ export function CopilotPanel() {
           </div>
         ) : showHistory ? (
           <div
-            className={`${maximized ? "h-[calc(90vh-5.5rem)] overflow-y-auto" : "min-h-[560px]"} rounded-xl bg-[var(--bg-base)] p-3`}
+            className={`${maximized ? "h-[calc(90vh-5.5rem)]" : "h-[560px]"} overflow-y-auto rounded-xl bg-[var(--bg-base)] p-3`}
           >
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">
@@ -314,9 +314,9 @@ export function CopilotPanel() {
           </div>
         ) : (
           <div
-            className={`flex ${maximized ? "h-[calc(90vh-5.5rem)]" : "min-h-[560px]"} flex-col`}
+            className={`flex ${maximized ? "h-[calc(90vh-5.5rem)]" : "h-[560px]"} min-h-0 flex-col`}
           >
-            <div className="flex-1 space-y-3 overflow-y-auto rounded-xl bg-[var(--bg-base)] p-3">
+            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl bg-[var(--bg-base)] p-3">
               {messages.length === 0 ? (
                 <div className="flex h-full flex-col justify-center rounded-xl border border-dashed border-[var(--border-hairline)] p-4 text-sm text-[var(--text-muted)]">
                   <p>Ask about a ticker, a trend, or your portfolio.</p>
