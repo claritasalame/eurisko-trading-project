@@ -1,15 +1,46 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from database import get_db
 from models import ChatMessage, ChatSession, User
-from schemas import ChatAssistantResponse, ChatMessageCreate, ChatMessageResponse, ChatSessionCreate, ChatSessionResponse
+from schemas import ChatAssistantResponse, ChatMessageCreate, ChatMessageResponse, ChatSessionCreate, ChatSessionListResponse, ChatSessionResponse
 from services.copilot import answer_query
 from services.auth import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/sessions", response_model=list[ChatSessionListResponse])
+def list_chat_sessions(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = (
+        db.query(ChatSession, func.max(ChatMessage.created_at).label("last_activity_at"))
+        .outerjoin(ChatMessage, ChatMessage.chat_session_id == ChatSession.id)
+        .filter(ChatSession.user_id == current_user.id)
+        .group_by(ChatSession.id)
+        .order_by(func.coalesce(func.max(ChatMessage.created_at), ChatSession.created_at).desc())
+        .all()
+    )
+    sessions = []
+    for chat_session, last_message_at in rows:
+        first_user_message_row = (
+            db.query(ChatMessage.content)
+            .filter(ChatMessage.chat_session_id == chat_session.id, ChatMessage.role == "user")
+            .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
+            .first()
+        )
+        first_user_message = first_user_message_row[0] if first_user_message_row else None
+        preview = (first_user_message or "New conversation").strip().replace("\n", " ")
+        sessions.append({
+            "id": chat_session.id,
+            "user_id": chat_session.user_id,
+            "created_at": chat_session.created_at,
+            "preview": preview[:60] + ("…" if len(preview) > 60 else ""),
+            "last_activity_at": last_message_at or chat_session.created_at,
+        })
+    return sessions
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)

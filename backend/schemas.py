@@ -205,6 +205,11 @@ class HoldingResponse(BaseModel):
     created_at: datetime
 
 
+class ChatSessionListResponse(ChatSessionResponse):
+    preview: str
+    last_activity_at: datetime
+
+
 class AdminProfileResponse(BaseModel):
     profile: Optional[UserProfileResponse] = None
     holdings: List[HoldingResponse]

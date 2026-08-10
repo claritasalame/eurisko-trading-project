@@ -37,6 +37,11 @@ export type ChatSessionResponse = {
   created_at: string;
 };
 
+export type ChatSessionListResponse = ChatSessionResponse & {
+  preview: string;
+  last_activity_at: string;
+};
+
 export type ChatMessageResponse = {
   id: string;
   chat_session_id: string;
@@ -121,8 +126,12 @@ export async function getNewsArticles(symbol: string): Promise<NewsArticleRespon
   return apiRequest<NewsArticleResponse[]>(`/api/news/articles?symbol=${encodeURIComponent(symbol)}`);
 }
 
-export async function getChatSessions(): Promise<ChatSessionResponse[]> {
-  return apiRequest<ChatSessionResponse[]>(`/api/chat/sessions`);
+export async function getChatSessions(): Promise<ChatSessionListResponse[]> {
+  return apiRequest<ChatSessionListResponse[]>(`/api/chat/sessions`);
+}
+
+export async function getChatSessionMessages(sessionId: string): Promise<ChatMessageResponse[]> {
+  return apiRequest<ChatMessageResponse[]>(`/api/chat/sessions/${encodeURIComponent(sessionId)}/messages`);
 }
 
 export async function createDemoSession(): Promise<ChatSessionResponse> {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createChatSession, sendChatMessage } from "@/lib/api";
+import { ChatSessionListResponse, createChatSession, getChatSessionMessages, getChatSessions, sendChatMessage } from "@/lib/api";
 import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
 
 type Message = {
@@ -33,6 +33,17 @@ const initialMessages: Message[] = [
   },
 ];
 
+function relativeTime(value: string) {
+  const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+  if (seconds < 60) return "Just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
 export function CopilotPanel() {
   const [collapsed, setCollapsed] = useState(false);
   const [input, setInput] = useState("");
@@ -40,9 +51,46 @@ export function CopilotPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<ChatSessionListResponse[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const { user, isLoading: isAuthLoading } = useAuth();
 
   const promptList = useMemo(() => promptExamples, []);
+
+  const refreshSessions = async () => {
+    if (!user) return;
+    setSessions(await getChatSessions());
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    setIsHistoryLoading(true);
+    refreshSessions().catch(() => setError("Could not load previous chats.")).finally(() => setIsHistoryLoading(false));
+  }, [user]);
+
+  const openSession = async (session: ChatSessionListResponse) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const storedMessages = await getChatSessionMessages(session.id);
+      setSessionId(session.id);
+      setMessages(storedMessages.filter((message) => message.role === "user" || message.role === "assistant").map((message) => ({ id: message.id, role: message.role as "user" | "assistant", content: message.content })));
+      setShowHistory(false);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Could not open that conversation.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const startNewChat = () => {
+    setSessionId(null);
+    setMessages(initialMessages);
+    setInput("");
+    setError(null);
+    setShowHistory(false);
+  };
 
   const sendMessage = async (content: string) => {
     const nextContent = content.trim();
@@ -68,6 +116,7 @@ export function CopilotPanel() {
           quote: result.quote,
         },
       ]);
+      await refreshSessions();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Copilot is unavailable right now.");
     } finally {
@@ -86,9 +135,11 @@ export function CopilotPanel() {
           {collapsed ? "→" : "←"}
         </button>
         {!collapsed ? (
-          <h2 className="font-[family-name:var(--font-display)] text-sm tracking-[0.14em] text-[var(--text-muted)]">
-            COPILOT
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-[family-name:var(--font-display)] text-sm tracking-[0.14em] text-[var(--text-muted)]">COPILOT</h2>
+            {user ? <button type="button" aria-label="View chat history" onClick={() => setShowHistory((value) => !value)} className="focus-visible-ring rounded-lg border border-[var(--border-hairline)] px-2 py-1 text-xs text-[var(--text-muted)]">History</button> : null}
+            {user ? <button type="button" onClick={startNewChat} className="focus-visible-ring rounded-lg border border-[var(--accent-signal)]/50 px-2 py-1 text-xs text-[var(--accent-signal)]">New chat</button> : null}
+          </div>
         ) : null}
       </div>
 
@@ -100,6 +151,12 @@ export function CopilotPanel() {
       ) : (
         !isAuthLoading && !user ? (
           <div className="flex min-h-[560px] flex-col items-center justify-center rounded-xl bg-[var(--bg-base)] p-6 text-center"><p className="text-sm text-[var(--text-muted)]">Sign in to use the portfolio copilot.</p><Link href="/login" className="focus-visible-ring mt-4 rounded-lg bg-[var(--accent-signal)] px-4 py-2 text-sm font-semibold text-[var(--bg-base)]">Sign in</Link></div>
+        ) : (
+        showHistory ? (
+          <div className="min-h-[560px] rounded-xl bg-[var(--bg-base)] p-3">
+            <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-semibold text-[var(--text-primary)]">Previous chats</h3><button type="button" onClick={() => setShowHistory(false)} className="text-xs text-[var(--accent-signal)]">Back</button></div>
+            {isHistoryLoading ? <div className="space-y-2"><div className="skeleton-row rounded-lg" /><div className="skeleton-row rounded-lg" /><div className="skeleton-row rounded-lg" /></div> : sessions.length === 0 ? <div className="rounded-xl border border-dashed border-[var(--border-hairline)] p-5 text-center text-sm text-[var(--text-muted)]">Your past conversations will show up here.</div> : <div className="space-y-2">{sessions.map((session) => <button key={session.id} type="button" onClick={() => void openSession(session)} className="focus-visible-ring block w-full rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-3 text-left hover:border-[var(--accent-signal)]/50"><span className="block truncate text-sm text-[var(--text-primary)]">{session.preview}</span><span className="mt-1 block font-[family-name:var(--font-data)] text-[10px] text-[var(--text-muted)]">{relativeTime(session.last_activity_at)}</span></button>)}</div>}
+          </div>
         ) : (
         <div className="flex min-h-[560px] flex-col">
           <div className="flex-1 space-y-3 rounded-xl bg-[var(--bg-base)] p-3">
@@ -189,6 +246,7 @@ export function CopilotPanel() {
             </div>
           </div>
         </div>
+        )
         )
       )}
     </aside>
