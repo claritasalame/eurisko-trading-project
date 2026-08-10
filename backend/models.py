@@ -86,6 +86,7 @@ class NewsArticle(Base):
     url = Column(String(500), unique=True, nullable=False)
     content = Column(Text, nullable=True)
     published_at = Column(DateTime, nullable=False)
+    symbol = Column(String(32), nullable=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
 

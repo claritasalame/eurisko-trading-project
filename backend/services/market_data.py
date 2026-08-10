@@ -161,6 +161,7 @@ def ingest_watchlist_data(symbols: list[str], db: Session) -> dict[str, Any]:
                 url=article_url,
                 content=item.get("content") or "",
                 published_at=datetime.fromisoformat(item.get("published_at") or datetime.utcnow().isoformat()),
+                symbol=symbol.upper(),
             )
             db.add(article)
             db.flush()
