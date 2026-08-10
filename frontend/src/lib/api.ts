@@ -54,6 +54,9 @@ export type MarketHistoryPoint = {
   macd_signal: number | null;
 };
 
+export type IndexQuoteResponse = { symbol: string; label: string; price: number; day_change_percent: number; fetched_at: string };
+export type PortfolioSummaryResponse = { cash_balance: number; risk_tolerance: string | null; portfolio_value: number; today_change: number; holdings: Array<{ id: string; symbol: string; quantity: number; average_cost_basis: number; current_price: number; day_change_percent: number; market_value: number; today_change: number }> };
+
 export type ChatSessionListResponse = ChatSessionResponse & {
   preview: string;
   last_activity_at: string;
@@ -154,6 +157,13 @@ export async function getNewsArticles(symbol: string): Promise<NewsArticleRespon
 export async function getMarketHistory(symbol: string, range: string): Promise<MarketHistoryPoint[]> {
   return apiRequest<MarketHistoryPoint[]>(`/api/market-data/history/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range.toLowerCase())}`);
 }
+
+export function getIndices(): Promise<IndexQuoteResponse[]> { return apiRequest<IndexQuoteResponse[]>("/api/market-data/indices"); }
+export async function getLatestNews(limit = 6): Promise<NewsArticleResponse[]> {
+  const articles = await apiRequest<NewsArticleApiResponse[]>(`/api/news/articles?limit=${limit}`);
+  return articles.map((article) => ({ id: article.id, source: article.source, headline: article.title, publishedAt: article.published_at, url: article.url }));
+}
+export function getPortfolioSummary(userId: string): Promise<PortfolioSummaryResponse> { return apiRequest<PortfolioSummaryResponse>(`/api/profile/${encodeURIComponent(userId)}/summary`); }
 
 export async function getChatSessions(): Promise<ChatSessionListResponse[]> {
   return apiRequest<ChatSessionListResponse[]>(`/api/chat/sessions`);

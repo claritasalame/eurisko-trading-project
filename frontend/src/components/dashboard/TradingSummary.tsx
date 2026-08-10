@@ -1,127 +1,23 @@
 "use client";
 
-import { useMemo } from "react";
-import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
-
-const summaryCards = [
-  {
-    label: "Portfolio value",
-    value: "$128,420",
-    tone: "neutral",
-    meta: "Across 8 active positions",
-  },
-  {
-    label: "Today's change",
-    value: "+$1,840",
-    tone: "positive",
-    meta: "Momentum remains constructive",
-  },
-  {
-    label: "Top mover",
-    value: "NVDA +3.8%",
-    tone: "positive",
-    meta: "Semiconductor leadership",
-  },
-  {
-    label: "Risk level",
-    value: "Moderate",
-    tone: "neutral",
-    meta: "Balanced exposure",
-  },
-] as const;
-
-const holdings = [
-  { symbol: "AAPL", price: 214.12, changePercent: 1.42 },
-  { symbol: "MSFT", price: 462.8, changePercent: -0.61 },
-  { symbol: "NVDA", price: 127.24, changePercent: 2.1 },
-  { symbol: "TSLA", price: 211.54, changePercent: -1.24 },
-];
-
-function statToneStyles(tone: string) {
-  if (tone === "positive") {
-    return {
-      border: "border-[rgba(52,211,153,0.35)]",
-      text: "text-[var(--positive)]",
-      bg: "bg-[rgba(52,211,153,0.12)]",
-    };
-  }
-  return {
-    border: "border-[var(--border-hairline)]",
-    text: "text-[var(--text-primary)]",
-    bg: "bg-[var(--bg-surface)]",
-  };
-}
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { getPortfolioSummary, PortfolioSummaryResponse } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { formatPercent, formatPrice } from "@/lib/numbers";
 
 export function TradingSummary() {
-  const total = useMemo(() => holdings.length, []);
+  const { user, isLoading: authLoading } = useAuth();
+  const [summary, setSummary] = useState<PortfolioSummaryResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { if (!user) { setSummary(null); return; } setLoading(true); getPortfolioSummary(user.id).then(setSummary).catch((reason) => setError(reason instanceof Error ? reason.message : "Could not load portfolio")).finally(() => setLoading(false)); }, [user]);
+  const topMover = useMemo(() => summary?.holdings.reduce((best, item) => !best || Math.abs(item.day_change_percent) > Math.abs(best.day_change_percent) ? item : best, undefined as PortfolioSummaryResponse["holdings"][number] | undefined), [summary]);
 
-  return (
-    <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-4">
-        <h2 className="font-[family-name:var(--font-display)] text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-          Your trading summary
-        </h2>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">A quick read on where things stand</p>
-      </div>
+  if (authLoading) return <section className="mx-auto max-w-6xl px-4 py-8"><div className="skeleton-chart rounded-2xl" /></section>;
+  if (!user) return <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"><div className="panel p-8 text-center"><h2 className="text-2xl font-bold">Sign in to see your real portfolio summary</h2><p className="mt-2 text-sm text-[var(--text-muted)]">Your holdings, daily movement, and risk profile are private to your account.</p><Link href="/login" className="mt-5 inline-block rounded-full bg-[var(--accent-signal)] px-5 py-2.5 text-sm font-semibold text-[var(--bg-base)]">Sign in</Link></div></section>;
+  if (loading) return <section className="mx-auto max-w-6xl px-4 py-8"><div className="skeleton-chart rounded-2xl" /></section>;
+  if (error || !summary) return <section className="mx-auto max-w-6xl px-4 py-8"><div className="panel p-6 text-[var(--negative)]">{error || "Could not load portfolio."}</div></section>;
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaryCards.map((card) => {
-          const styles = statToneStyles(card.tone);
-          return (
-            <article
-              key={card.label}
-              className={`rounded-2xl border ${styles.border} ${styles.bg} p-4 shadow-[0_18px_50px_rgba(7,10,17,0.34)]`}
-            >
-              <p className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{card.label}</p>
-              <p className="mt-3 font-[family-name:var(--font-data)] text-2xl font-semibold text-[var(--text-primary)]">
-                {card.value}
-              </p>
-              <p className={`mt-2 text-xs ${styles.text}`}>{card.meta}</p>
-            </article>
-          );
-        })}
-      </div>
-
-      <div className="mt-5 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-[family-name:var(--font-display)] text-sm tracking-[0.14em] text-[var(--text-muted)]">
-            HOLDINGS
-          </h3>
-          <span className="font-[family-name:var(--font-data)] text-xs text-[var(--text-muted)]">
-            {total} symbols
-          </span>
-        </div>
-
-        <div className="space-y-2">
-          {holdings.map((item) => {
-            const hasChange = isFiniteNumber(item.changePercent);
-            const positive = hasChange && item.changePercent >= 0;
-            return (
-              <div
-                key={item.symbol}
-                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-base)] px-3 py-2"
-              >
-                <div>
-                  <div className="font-[family-name:var(--font-data)] text-sm text-[var(--text-primary)]">
-                    {item.symbol}
-                  </div>
-                  <div className="mt-1 text-xs text-[var(--text-muted)]">Active position</div>
-                </div>
-
-                <div className="text-right">
-                  <div className="font-[family-name:var(--font-data)] text-sm text-[var(--text-primary)]">
-                    {formatPrice(item.price)}
-                  </div>
-                  <div className={`mt-1 text-xs ${positive ? "text-[var(--positive)]" : "text-[var(--negative)]"}`}>
-                    {hasChange ? <span className="mr-1">{positive ? "▲" : "▼"}</span> : null}
-                    {formatPercent(item.changePercent)}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
+  return <section className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8"><h2 className="text-3xl font-bold">Your trading summary</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Live values for {user.email}</p>{summary.holdings.length === 0 ? <div className="panel mt-5 p-8 text-center"><h3 className="text-xl font-semibold">Add your first holding</h3><p className="mt-2 text-sm text-[var(--text-muted)]">Your real portfolio totals will appear here.</p><Link href="/dashboard/profile" className="mt-5 inline-block rounded-full border border-[var(--accent-signal)] px-4 py-2 text-sm text-[var(--accent-signal)]">Open profile</Link></div> : <><div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">{[["Portfolio value", formatPrice(summary.portfolio_value)], ["Today's change", formatPrice(summary.today_change)], ["Top mover", topMover ? `${topMover.symbol} ${formatPercent(topMover.day_change_percent)}` : "—"], ["Risk level", summary.risk_tolerance || "Not set"]].map(([label, value]) => <article key={label} className="panel p-4"><p className="text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">{label}</p><p className="mt-3 font-[family-name:var(--font-data)] text-2xl font-semibold">{value}</p></article>)}</div><div className="panel mt-5 p-4"><h3 className="text-sm tracking-[0.14em] text-[var(--text-muted)]">HOLDINGS</h3><div className="mt-3 space-y-2">{summary.holdings.map((item) => <div key={item.id} className="flex justify-between rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-base)] p-3"><div><p className="font-[family-name:var(--font-data)]">{item.symbol}</p><p className="text-xs text-[var(--text-muted)]">{item.quantity} shares</p></div><div className="text-right"><p>{formatPrice(item.market_value)}</p><p className={item.day_change_percent >= 0 ? "text-[var(--positive)]" : "text-[var(--negative)]"}>{formatPercent(item.day_change_percent)}</p></div></div>)}</div></div></>}</section>;
 }
