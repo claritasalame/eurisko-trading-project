@@ -4,9 +4,10 @@ from openai import OpenAI
 from sqlalchemy.orm import Session
 
 from config import OPENAI_API_KEY
-from models import ChatMessage, ChatSession, Holding, UserProfile
+from models import ChatMessage, ChatSession
 from services.embeddings import embed_text
 from services.market_data import fetch_quote
+from services.portfolio import build_portfolio_snapshot, format_portfolio_context
 from services.qdrant_client import search_news
 
 
@@ -85,45 +86,7 @@ def build_conversation_context(user_id, db: Session) -> str | None:
 
 
 def build_user_context(user_id, db: Session) -> str:
-    profile = db.query(UserProfile).filter(UserProfile.user_id == user_id).first()
-    holdings = db.query(Holding).filter(Holding.user_id == user_id).order_by(Holding.created_at).all()
-
-    if profile is None:
-        sections = ["Profile status: not set up. Cash balance, risk tolerance, goals, and experience are unknown."]
-    else:
-        sections = [
-            "Profile status: configured.",
-            f"Cash balance: ${profile.cash_balance:,.2f}",
-            f"Risk tolerance: {profile.risk_tolerance or 'not provided'}",
-            f"Investment goals: {profile.investment_goals or 'not provided'}",
-            f"Experience level: {profile.experience_level or 'not provided'}",
-        ]
-
-    sections.extend(["", "Holdings:", "Symbol | Quantity | Cost basis | Current price | Unrealized gain/loss"])
-    if not holdings:
-        sections.append("No holdings recorded.")
-        return "\n".join(sections)
-
-    for holding in holdings:
-        try:
-            holding_quote = fetch_quote(holding.symbol)
-            current_price = holding_quote["price"]
-            unrealized_amount = (current_price - holding.average_cost_basis) * holding.quantity
-            unrealized_percent = (
-                ((current_price - holding.average_cost_basis) / holding.average_cost_basis) * 100
-                if holding.average_cost_basis
-                else 0.0
-            )
-            sections.append(
-                f"{holding.symbol} | {holding.quantity:g} | ${holding.average_cost_basis:,.2f} | "
-                f"${current_price:,.2f} | ${unrealized_amount:,.2f} ({unrealized_percent:+.2f}%)"
-            )
-        except Exception as exc:
-            sections.append(
-                f"{holding.symbol} | {holding.quantity:g} | ${holding.average_cost_basis:,.2f} | "
-                f"unavailable | unavailable (quote error: {type(exc).__name__})"
-            )
-    return "\n".join(sections)
+    return format_portfolio_context(build_portfolio_snapshot(user_id, db))
 
 
 def answer_query(query: str, symbol: str | None, db: Session, user_id=None) -> dict[str, Any]:

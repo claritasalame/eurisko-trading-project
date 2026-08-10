@@ -35,7 +35,7 @@ export function Hero() {
           href="#preview"
           className="focus-visible-ring rounded-full border border-[var(--border-hairline)] bg-transparent px-5 py-3 text-sm font-semibold text-[var(--text-primary)]"
         >
-          View demo
+          See live preview
         </Link>
       </div>
 

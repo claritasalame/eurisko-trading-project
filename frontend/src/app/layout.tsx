@@ -3,8 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 
 export const metadata: Metadata = {
-  title: "Eurisko Trading Platform",
-  description: "Local-only AI-powered trading and investment workspace",
+  title: "MarketMIND Trading Platform",
+  description: "AI-powered market data, news, and portfolio analysis workspace",
 };
 
 export default function RootLayout({
@@ -13,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className="h-full scroll-smooth antialiased">
       <body className="min-h-full flex flex-col"><AuthProvider>{children}</AuthProvider></body>
     </html>
   );

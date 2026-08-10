@@ -93,7 +93,7 @@ export default function LoginPage() {
             {isSubmitting ? "Signing in..." : "Sign in"}
           </button>
         </form>
-        <p className="mt-5 text-center text-sm text-[var(--text-muted)]">New to Eurisko? <Link href="/register" className="text-[var(--accent-signal)]">Create an account</Link></p>
+        <p className="mt-5 text-center text-sm text-[var(--text-muted)]">New to MarketMIND? <Link href="/register" className="text-[var(--accent-signal)]">Create an account</Link></p>
       </div>
     </main>
   );

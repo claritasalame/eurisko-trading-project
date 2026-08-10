@@ -5,10 +5,17 @@ from sqlalchemy.orm import Session
 
 from database import get_db
 from models import Holding, User, UserProfile
-from schemas import HoldingCreate, HoldingResponse, UserProfileResponse, UserProfileUpdate
+from schemas import HoldingCreate, HoldingResponse, PortfolioSummaryResponse, UserProfileResponse, UserProfileUpdate
 from services.auth import get_current_user
+from services.portfolio import build_portfolio_snapshot
 
 router = APIRouter()
+
+
+@router.get("/{user_id}/summary", response_model=PortfolioSummaryResponse)
+def get_portfolio_summary(user_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    require_own_user(user_id, current_user)
+    return build_portfolio_snapshot(current_user.id, db)
 
 
 def get_or_create_profile(user_id: UUID, db: Session) -> UserProfile:

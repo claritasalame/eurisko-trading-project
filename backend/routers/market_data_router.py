@@ -2,10 +2,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas import IndicatorResponse, MarketHistoryPoint, QuoteResponse
-from services.market_data import HISTORY_RANGES, WATCHLIST_SYMBOLS, fetch_history, fetch_quote, ingest_watchlist_data
+from schemas import IndexQuoteResponse, IndicatorResponse, MarketHistoryPoint, QuoteResponse
+from services.market_data import HISTORY_RANGES, WATCHLIST_SYMBOLS, fetch_history, fetch_indices, fetch_quote, ingest_watchlist_data
 
 router = APIRouter()
+
+
+@router.get("/indices", response_model=list[IndexQuoteResponse])
+def get_indices():
+    return fetch_indices()
 
 
 @router.get("/quote/{symbol}", response_model=QuoteResponse)

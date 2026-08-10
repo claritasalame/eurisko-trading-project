@@ -11,6 +11,12 @@ from services.embeddings import chunk_article, embed_text
 from services.qdrant_client import upsert_news_embedding
 
 WATCHLIST_SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"]
+MARKET_INDICES = {
+    "^GSPC": "S&P 500",
+    "^IXIC": "Nasdaq Composite",
+    "^DJI": "Dow Jones",
+    "^VIX": "Volatility Index",
+}
 
 HISTORY_RANGES = {
     "1d": ("1d", "5m"),
@@ -75,6 +81,13 @@ def fetch_quote(symbol: str) -> dict:
         "volume": volume,
         "fetched_at": datetime.utcnow().isoformat(),
     }
+
+
+def fetch_indices() -> list[dict]:
+    return [
+        {"label": label, **fetch_quote(symbol)}
+        for symbol, label in MARKET_INDICES.items()
+    ]
 
 
 def fetch_news(symbol: str) -> list[dict]:

@@ -69,6 +69,14 @@ class QuoteResponse(BaseModel):
     currency: str = "USD"
 
 
+class IndexQuoteResponse(BaseModel):
+    symbol: str
+    label: str
+    price: float
+    day_change_percent: float
+    fetched_at: str
+
+
 class IndicatorResponse(BaseModel):
     symbol: str
     indicators: dict
@@ -212,6 +220,25 @@ class HoldingResponse(BaseModel):
     quantity: float
     average_cost_basis: float
     created_at: datetime
+
+
+class PortfolioHoldingResponse(BaseModel):
+    id: UUID
+    symbol: str
+    quantity: float
+    average_cost_basis: float
+    current_price: float
+    day_change_percent: float
+    market_value: float
+    today_change: float
+
+
+class PortfolioSummaryResponse(BaseModel):
+    cash_balance: float
+    risk_tolerance: Optional[str] = None
+    portfolio_value: float
+    today_change: float
+    holdings: List[PortfolioHoldingResponse]
 
 
 class ChatSessionListResponse(ChatSessionResponse):

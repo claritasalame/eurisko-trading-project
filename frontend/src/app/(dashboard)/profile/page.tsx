@@ -114,7 +114,7 @@ export default function ProfilePage() {
       <div className="mx-auto max-w-4xl">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <p className="font-[family-name:var(--font-display)] text-xs tracking-[0.18em] text-[var(--accent-signal)]">EURISKO</p>
+            <p className="font-[family-name:var(--font-display)] text-xs tracking-[0.18em] text-[var(--accent-signal)]">MARKETMIND</p>
             <h1 className="mt-1 text-2xl font-semibold">Profile &amp; holdings</h1>
           </div>
           <Link href="/dashboard" className="focus-visible-ring rounded-lg border border-[var(--border-hairline)] px-3 py-2 text-sm text-[var(--text-muted)]">Back to dashboard</Link>
