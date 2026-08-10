@@ -74,6 +74,15 @@ class IndicatorResponse(BaseModel):
     indicators: dict
 
 
+class MarketHistoryPoint(BaseModel):
+    timestamp: datetime
+    price: float
+    sma: Optional[float] = None
+    rsi: Optional[float] = None
+    macd: Optional[float] = None
+    macd_signal: Optional[float] = None
+
+
 class AIQueryRequest(BaseModel):
     query: str
     symbol: Optional[str] = None

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getNewsArticles } from "@/lib/api";
+import { getNewsArticles, NewsArticleResponse } from "@/lib/api";
 
 const newsSeed = [
   {
@@ -24,8 +24,19 @@ const newsSeed = [
   },
 ];
 
+function relativeTime(value: string) {
+  if (value.endsWith("ago")) return value;
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
 export function NewsFeed({ symbol = "AAPL" }: { symbol?: string }) {
-  const [items, setItems] = useState(newsSeed);
+  const [items, setItems] = useState<NewsArticleResponse[]>(newsSeed);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -74,16 +85,13 @@ export function NewsFeed({ symbol = "AAPL" }: { symbol?: string }) {
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-1">
           {items.map((item) => (
-            <article
-              key={item.id}
-              className="min-w-[260px] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-3"
-            >
+            <a key={item.id} href={item.url} target="_blank" rel="noreferrer" className="focus-visible-ring block min-w-[260px] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-3 transition hover:border-[var(--accent-signal)]/50">
               <div className="flex items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
                 <span>{item.source}</span>
-                <span className="font-[family-name:var(--font-data)]">{item.publishedAt}</span>
+                <span className="font-[family-name:var(--font-data)]">{relativeTime(item.publishedAt)}</span>
               </div>
-              <p className="mt-3 text-sm leading-6 text-[var(--text-primary)]">{item.headline}</p>
-            </article>
+              <p className="mt-3 line-clamp-2 text-sm leading-6 text-[var(--text-primary)]">{item.headline}</p>
+            </a>
           ))}
         </div>
       )}

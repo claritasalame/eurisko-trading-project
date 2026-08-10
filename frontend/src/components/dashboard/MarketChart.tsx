@@ -10,20 +10,8 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { getQuote } from "@/lib/api";
+import { getMarketHistory, getQuote, MarketHistoryPoint } from "@/lib/api";
 import { formatChartValue, formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
-
-const chartSeed = [
-  { time: "09:30", price: 209.6 },
-  { time: "10:00", price: 210.2 },
-  { time: "10:30", price: 208.9 },
-  { time: "11:00", price: 212.1 },
-  { time: "11:30", price: 211.5 },
-  { time: "12:00", price: 214.2 },
-  { time: "12:30", price: 213.4 },
-  { time: "13:00", price: 215.1 },
-  { time: "13:30", price: 217.8 },
-];
 
 const timeframes = ["1D", "1W", "1M", "1Y"] as const;
 const indicators = ["RSI", "MACD", "SMA"] as const;
@@ -34,8 +22,8 @@ type MarketChartProps = {
 
 export function MarketChart({ symbol = "AAPL" }: MarketChartProps) {
   const [timeframe, setTimeframe] = useState<(typeof timeframes)[number]>("1D");
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
-  const [data, setData] = useState(chartSeed);
+  const [selectedIndicators, setSelectedIndicators] = useState<(typeof indicators)[number][]>([]);
+  const [data, setData] = useState<MarketHistoryPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
@@ -47,20 +35,14 @@ export function MarketChart({ symbol = "AAPL" }: MarketChartProps) {
       setHasError(false);
 
       try {
-        const quote = await getQuote(symbol);
+        const [quote, history] = await Promise.all([getQuote(symbol), getMarketHistory(symbol, timeframe)]);
         if (!isFiniteNumber(quote.price) || !isFiniteNumber(quote.day_change_percent)) {
           throw new Error("Quote response contains invalid numeric values");
         }
 
         setCurrentPrice(quote.price);
         setDayChangePercent(quote.day_change_percent);
-        const priceDelta = quote.price * (quote.day_change_percent / 100);
-        const nextData = chartSeed.map((point, index) => ({
-          time: point.time,
-          price: Number((quote.price + priceDelta * (index / 5 - 0.5)).toFixed(2)),
-        }));
-
-        setData(nextData);
+        setData(history);
       } catch {
         setHasError(true);
       } finally {
@@ -69,9 +51,15 @@ export function MarketChart({ symbol = "AAPL" }: MarketChartProps) {
     };
 
     loadChart();
-  }, [symbol]);
+  }, [symbol, timeframe]);
 
   const formattedPrice = useMemo(() => formatPrice(currentPrice), [currentPrice]);
+  const formatTimestamp = (value: string) => {
+    const date = new Date(value);
+    if (timeframe === "1D") return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (timeframe === "1W") return date.toLocaleDateString([], { weekday: "short", hour: "2-digit" });
+    return date.toLocaleDateString([], { month: "short", day: "numeric" });
+  };
 
   if (isLoading) {
     return (
@@ -179,7 +167,8 @@ export function MarketChart({ symbol = "AAPL" }: MarketChartProps) {
           <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 10 }}>
             <CartesianGrid stroke="rgba(124,132,148,0.12)" strokeDasharray="3 3" />
             <XAxis
-              dataKey="time"
+              dataKey="timestamp"
+              tickFormatter={formatTimestamp}
               tick={{ fill: "#7C8494", fontFamily: "var(--font-data)" }}
               axisLine={false}
               tickLine={false}
@@ -209,9 +198,22 @@ export function MarketChart({ symbol = "AAPL" }: MarketChartProps) {
               dot={false}
               activeDot={{ r: 4 }}
             />
+            {selectedIndicators.includes("SMA") ? <Line type="monotone" dataKey="sma" name="SMA 20" stroke="#A78BFA" strokeWidth={2} dot={false} connectNulls /> : null}
           </LineChart>
         </ResponsiveContainer>
       </div>
+      {selectedIndicators.includes("RSI") ? (
+        <div aria-label="RSI indicator chart" className="mt-3 h-[130px] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-base)] p-2">
+          <p className="px-2 text-[10px] tracking-[0.12em] text-[var(--text-muted)]">RSI (14)</p>
+          <ResponsiveContainer width="100%" height="88%"><LineChart data={data}><CartesianGrid stroke="rgba(124,132,148,0.12)" strokeDasharray="3 3" /><XAxis dataKey="timestamp" hide /><YAxis domain={[0, 100]} width={32} tick={{ fill: "#7C8494", fontSize: 10 }} /><Tooltip labelFormatter={(value) => formatTimestamp(String(value))} /><Line type="monotone" dataKey="rsi" stroke="#F59E0B" strokeWidth={2} dot={false} connectNulls /></LineChart></ResponsiveContainer>
+        </div>
+      ) : null}
+      {selectedIndicators.includes("MACD") ? (
+        <div aria-label="MACD indicator chart" className="mt-3 h-[130px] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-base)] p-2">
+          <p className="px-2 text-[10px] tracking-[0.12em] text-[var(--text-muted)]">MACD (12, 26, 9)</p>
+          <ResponsiveContainer width="100%" height="88%"><LineChart data={data}><CartesianGrid stroke="rgba(124,132,148,0.12)" strokeDasharray="3 3" /><XAxis dataKey="timestamp" hide /><YAxis width={42} tick={{ fill: "#7C8494", fontSize: 10 }} /><Tooltip labelFormatter={(value) => formatTimestamp(String(value))} /><Line type="monotone" dataKey="macd" name="MACD" stroke="#38BDF8" strokeWidth={2} dot={false} /><Line type="monotone" dataKey="macd_signal" name="Signal" stroke="#F472B6" strokeWidth={1.5} dot={false} /></LineChart></ResponsiveContainer>
+        </div>
+      ) : null}
     </section>
   );
 }

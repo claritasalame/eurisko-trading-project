@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from database import get_db
-from schemas import IndicatorResponse, QuoteResponse
-from services.market_data import WATCHLIST_SYMBOLS, fetch_quote, ingest_watchlist_data
+from schemas import IndicatorResponse, MarketHistoryPoint, QuoteResponse
+from services.market_data import HISTORY_RANGES, WATCHLIST_SYMBOLS, fetch_history, fetch_quote, ingest_watchlist_data
 
 router = APIRouter()
 
@@ -15,6 +15,17 @@ def get_quote(symbol: str):
         **quote,
         "currency": "USD",
     }
+
+
+@router.get("/history/{symbol}", response_model=list[MarketHistoryPoint])
+def get_history(symbol: str, range_name: str = Query("1d", alias="range")):
+    normalized_range = range_name.lower()
+    if normalized_range not in HISTORY_RANGES:
+        raise HTTPException(status_code=422, detail="Range must be one of: 1d, 1w, 1m, 1y")
+    try:
+        return fetch_history(symbol.upper(), normalized_range)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 @router.get("/indicators/{symbol}", response_model=IndicatorResponse)

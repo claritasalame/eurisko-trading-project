@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Any
+import math
 
 import yfinance as yf
 from sqlalchemy.orm import Session
@@ -10,6 +11,49 @@ from services.embeddings import chunk_article, embed_text
 from services.qdrant_client import upsert_news_embedding
 
 WATCHLIST_SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"]
+
+HISTORY_RANGES = {
+    "1d": ("1d", "5m"),
+    "1w": ("5d", "30m"),
+    "1m": ("1mo", "1d"),
+    "1y": ("1y", "1wk"),
+}
+
+
+def _optional_number(value) -> float | None:
+    number = float(value)
+    return None if math.isnan(number) else round(number, 4)
+
+
+def fetch_history(symbol: str, range_name: str) -> list[dict]:
+    period, interval = HISTORY_RANGES[range_name]
+    history = yf.Ticker(symbol).history(period=period, interval=interval, auto_adjust=False, actions=False)
+    if history.empty:
+        raise ValueError(f"No historical data returned for {symbol}")
+
+    close = history["Close"].astype(float)
+    sma = close.rolling(window=20, min_periods=20).mean()
+    delta = close.diff()
+    gains = delta.clip(lower=0).rolling(window=14, min_periods=14).mean()
+    losses = (-delta.clip(upper=0)).rolling(window=14, min_periods=14).mean()
+    relative_strength = gains / losses.replace(0, float("nan"))
+    rsi = 100 - (100 / (1 + relative_strength))
+    ema_12 = close.ewm(span=12, adjust=False).mean()
+    ema_26 = close.ewm(span=26, adjust=False).mean()
+    macd = ema_12 - ema_26
+    macd_signal = macd.ewm(span=9, adjust=False).mean()
+
+    return [
+        {
+            "timestamp": timestamp.to_pydatetime(),
+            "price": round(float(close.iloc[index]), 4),
+            "sma": _optional_number(sma.iloc[index]),
+            "rsi": _optional_number(rsi.iloc[index]),
+            "macd": _optional_number(macd.iloc[index]),
+            "macd_signal": _optional_number(macd_signal.iloc[index]),
+        }
+        for index, timestamp in enumerate(history.index)
+    ]
 
 
 def fetch_quote(symbol: str) -> dict:

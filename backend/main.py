@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             func=run_watchlist_ingestion,
             trigger="interval",
-            minutes=15,
+            minutes=5,
             id="market_data_ingest",
             replace_existing=True,
         )

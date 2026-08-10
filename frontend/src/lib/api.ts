@@ -37,6 +37,23 @@ export type ChatSessionResponse = {
   created_at: string;
 };
 
+type NewsArticleApiResponse = {
+  id: string;
+  source: string;
+  title: string;
+  published_at: string;
+  url: string;
+};
+
+export type MarketHistoryPoint = {
+  timestamp: string;
+  price: number;
+  sma: number | null;
+  rsi: number | null;
+  macd: number | null;
+  macd_signal: number | null;
+};
+
 export type ChatSessionListResponse = ChatSessionResponse & {
   preview: string;
   last_activity_at: string;
@@ -123,7 +140,19 @@ export async function getQuote(symbol: string): Promise<QuoteResponse> {
 }
 
 export async function getNewsArticles(symbol: string): Promise<NewsArticleResponse[]> {
-  return apiRequest<NewsArticleResponse[]>(`/api/news/articles?symbol=${encodeURIComponent(symbol)}`);
+  const articles = await apiRequest<NewsArticleApiResponse[]>(`/api/news/articles?symbol=${encodeURIComponent(symbol)}`);
+  return articles.map((article) => ({
+    id: article.id,
+    source: article.source,
+    headline: article.title,
+    publishedAt: article.published_at,
+    url: article.url,
+    symbol,
+  }));
+}
+
+export async function getMarketHistory(symbol: string, range: string): Promise<MarketHistoryPoint[]> {
+  return apiRequest<MarketHistoryPoint[]>(`/api/market-data/history/${encodeURIComponent(symbol)}?range=${encodeURIComponent(range.toLowerCase())}`);
 }
 
 export async function getChatSessions(): Promise<ChatSessionListResponse[]> {
