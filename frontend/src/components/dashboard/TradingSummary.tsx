@@ -111,7 +111,7 @@ export function TradingSummary() {
               ["Today's change", formatPrice(summary.today_change)],
               [
                 "Top mover",
-                topMover
+                topMover && topMover.day_change_percent !== null
                   ? `${topMover.symbol} ${formatPercent(topMover.day_change_percent)}`
                   : "—",
               ],
