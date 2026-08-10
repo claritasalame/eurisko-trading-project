@@ -22,6 +22,26 @@ export type QuoteResponse = {
   currency: string;
 };
 
+export type StockResponse = {
+  id: string;
+  symbol: string;
+  name: string | null;
+  exchange: string | null;
+  currency: string | null;
+  sector: string | null;
+  industry: string | null;
+  country: string | null;
+  market_cap: number | null;
+  website: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export function getStocks(): Promise<StockResponse[]> {
+  return apiRequest<StockResponse[]>('/api/stocks/');
+}
+
 export type NewsArticleResponse = {
   id: string;
   source: string;

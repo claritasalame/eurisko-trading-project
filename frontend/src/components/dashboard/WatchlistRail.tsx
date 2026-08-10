@@ -1,29 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getQuote } from "@/lib/api";
+import { getQuote, getStocks } from "@/lib/api";
 import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
 
-const watchlistSeed = [
-  { symbol: "AAPL", company: "Apple", price: 214.12, day_change_percent: 1.42 },
-  { symbol: "MSFT", company: "Microsoft", price: 462.8, day_change_percent: -0.61 },
-  { symbol: "NVDA", company: "NVIDIA", price: 127.24, day_change_percent: 2.1 },
-  { symbol: "TSLA", company: "Tesla", price: 211.54, day_change_percent: -1.24 },
-];
+type WatchlistItem = {
+  symbol: string;
+  company: string;
+  price: number;
+  day_change_percent: number;
+};
 
-export function WatchlistRail() {
-  const [watchlist, setWatchlist] = useState(watchlistSeed);
+type WatchlistRailProps = {
+  selectedSymbol: string;
+  onSelectSymbol: (symbol: string) => void;
+};
+
+export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailProps) {
+  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     const loadWatchlist = async () => {
       try {
+        const stocks = await getStocks();
         const quotes = await Promise.all(
-          watchlistSeed.map(async (item) => {
+          stocks.map(async (item) => {
             const response = await getQuote(item.symbol);
             return {
-              ...item,
+              symbol: item.symbol,
+              company: item.name ?? item.symbol,
               price: response.price,
               day_change_percent: response.day_change_percent,
             };
@@ -86,11 +93,13 @@ export function WatchlistRail() {
           {watchlist.map((item) => {
             const hasChange = isFiniteNumber(item.day_change_percent);
             const positive = hasChange && item.day_change_percent >= 0;
+            const isSelected = item.symbol === selectedSymbol;
             return (
               <button
                 key={item.symbol}
                 type="button"
-                className="focus-visible-ring flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--bg-surface-raised)]"
+                onClick={() => onSelectSymbol(item.symbol)}
+                className={`focus-visible-ring flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-[var(--bg-surface-raised)] ${isSelected ? "border border-[var(--accent-signal)]/30 bg-[var(--bg-surface-raised)]" : ""}`}
               >
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">

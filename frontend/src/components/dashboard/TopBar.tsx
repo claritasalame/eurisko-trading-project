@@ -1,20 +1,46 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AccountMenu } from "@/components/auth/AccountMenu";
+import { getStocks, StockResponse } from "@/lib/api";
 
-const suggestions = ["AAPL", "MSFT", "NVDA", "TSLA", "AMZN", "META"];
+type TopBarProps = {
+  selectedSymbol: string;
+  onSelectSymbol: (symbol: string) => void;
+};
 
-export function TopBar() {
-  const [query, setQuery] = useState("AAPL");
+export function TopBar({ selectedSymbol, onSelectSymbol }: TopBarProps) {
+  const [query, setQuery] = useState(selectedSymbol);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [stocks, setStocks] = useState<StockResponse[]>([]);
+
+  useEffect(() => {
+    const loadStocks = async () => {
+      try {
+        const response = await getStocks();
+        setStocks(response);
+      } catch {
+        setStocks([]);
+      }
+    };
+
+    loadStocks();
+  }, []);
+
+  useEffect(() => {
+    setQuery(selectedSymbol);
+  }, [selectedSymbol]);
 
   const filteredSuggestions = useMemo(() => {
     const nextQuery = query.trim().toUpperCase();
-    if (!nextQuery) return suggestions;
+    if (!nextQuery) return stocks;
 
-    return suggestions.filter((item) => item.includes(nextQuery));
-  }, [query]);
+    return stocks.filter((item) => {
+      const symbol = item.symbol.toUpperCase();
+      const name = (item.name ?? "").toUpperCase();
+      return symbol.includes(nextQuery) || name.includes(nextQuery);
+    });
+  }, [query, stocks]);
 
   return (
     <header className="panel sticky top-0 z-30 flex flex-wrap items-center gap-3 px-4 py-3">
@@ -53,17 +79,18 @@ export function TopBar() {
           <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] rounded-xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-1 shadow-2xl">
             {filteredSuggestions.map((item) => (
               <button
-                key={item}
+                key={item.id}
                 type="button"
                 className="focus-visible-ring flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm text-[var(--text-primary)]"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
-                  setQuery(item);
+                  setQuery(item.symbol);
                   setShowSuggestions(false);
+                  onSelectSymbol(item.symbol);
                 }}
               >
-                <span className="font-[family-name:var(--font-data)]">{item}</span>
-                <span className="text-[var(--text-muted)]">Add to watchlist</span>
+                <span className="font-[family-name:var(--font-data)]">{item.symbol}</span>
+                <span className="text-[var(--text-muted)]">{item.name ?? "Market symbol"}</span>
               </button>
             ))}
           </div>
