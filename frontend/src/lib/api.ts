@@ -55,7 +55,7 @@ export type MarketHistoryPoint = {
 };
 
 export type IndexQuoteResponse = { symbol: string; label: string; price: number; day_change_percent: number; fetched_at: string };
-export type PortfolioSummaryResponse = { cash_balance: number; risk_tolerance: string | null; portfolio_value: number; today_change: number; holdings: Array<{ id: string; symbol: string; quantity: number; average_cost_basis: number; current_price: number; day_change_percent: number; market_value: number; today_change: number }> };
+export type PortfolioSummaryResponse = { cash_balance: number; risk_tolerance: string | null; portfolio_value: number; today_change: number; holdings: Array<{ id: string; symbol: string; quantity: number; average_cost_basis: number; current_price: number | null; day_change_percent: number | null; market_value: number | null; today_change: number | null }> };
 
 export type ChatSessionListResponse = ChatSessionResponse & {
   preview: string;

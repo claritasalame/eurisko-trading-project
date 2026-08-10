@@ -15,6 +15,16 @@ def build_portfolio_snapshot(user_id, db: Session) -> dict:
         try:
             quote = fetch_quote(holding.symbol)
         except Exception:
+            valued_holdings.append({
+                "id": holding.id,
+                "symbol": holding.symbol,
+                "quantity": holding.quantity,
+                "average_cost_basis": holding.average_cost_basis,
+                "current_price": None,
+                "day_change_percent": None,
+                "market_value": None,
+                "today_change": None,
+            })
             continue
         current_price = quote["price"]
         change_percent = quote["day_change_percent"]
@@ -56,6 +66,11 @@ def format_portfolio_context(snapshot: dict) -> str:
     if not snapshot["holdings"]:
         sections.append("No holdings recorded.")
     for holding in snapshot["holdings"]:
+        if holding["current_price"] is None:
+            sections.append(
+                f"{holding['symbol']} | {holding['quantity']:g} | ${holding['average_cost_basis']:,.2f} | unavailable | unavailable"
+            )
+            continue
         sections.append(
             f"{holding['symbol']} | {holding['quantity']:g} | ${holding['average_cost_basis']:,.2f} | "
             f"${holding['current_price']:,.2f} | ${holding['market_value']:,.2f}"

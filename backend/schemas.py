@@ -227,10 +227,10 @@ class PortfolioHoldingResponse(BaseModel):
     symbol: str
     quantity: float
     average_cost_basis: float
-    current_price: float
-    day_change_percent: float
-    market_value: float
-    today_change: float
+    current_price: Optional[float] = None
+    day_change_percent: Optional[float] = None
+    market_value: Optional[float] = None
+    today_change: Optional[float] = None
 
 
 class PortfolioSummaryResponse(BaseModel):
