@@ -12,7 +12,10 @@ def build_portfolio_snapshot(user_id, db: Session) -> dict:
     today_change = 0.0
 
     for holding in holdings:
-        quote = fetch_quote(holding.symbol)
+        try:
+            quote = fetch_quote(holding.symbol)
+        except Exception:
+            continue
         current_price = quote["price"]
         change_percent = quote["day_change_percent"]
         market_value = current_price * holding.quantity
