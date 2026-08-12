@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -69,10 +69,10 @@ export function CopilotPanel() {
 
   const promptList = useMemo(() => promptExamples, []);
 
-  const refreshSessions = async () => {
+  const refreshSessions = useCallback(async () => {
     if (!user) return;
     setSessions(await getChatSessions());
-  };
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -80,7 +80,7 @@ export function CopilotPanel() {
     refreshSessions()
       .catch(() => setError("Could not load previous chats."))
       .finally(() => setIsHistoryLoading(false));
-  }, [user]);
+  }, [user, refreshSessions]);
 
   const openSession = async (session: ChatSessionListResponse) => {
     setIsLoading(true);
