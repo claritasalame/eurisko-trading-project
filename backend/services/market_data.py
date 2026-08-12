@@ -197,6 +197,8 @@ def ingest_watchlist_data(symbols: list[str], db: Session) -> dict[str, Any]:
 def run_watchlist_ingestion() -> dict[str, Any]:
     db = SessionLocal()
     try:
-        return ingest_watchlist_data(WATCHLIST_SYMBOLS, db)
+        result = ingest_watchlist_data(WATCHLIST_SYMBOLS, db)
+        print(f"Market ingestion completed: {result}", flush=True)
+        return result
     finally:
         db.close()
