@@ -14,7 +14,7 @@ export function Hero() {
 
       <h1 className="mt-6 max-w-4xl font-[family-name:var(--font-display)] text-4xl font-bold leading-[0.95] tracking-[-0.04em] text-[var(--text-primary)] sm:text-5xl lg:text-7xl">
         <span className="block">Know what the market is doing</span>
-        <span className="block bg-[linear-gradient(135deg,var(--accent-teal),var(--accent-violet))] bg-clip-text text-transparent">
+        <span className="block bg-[linear-gradient(135deg,var(--accent-teal),var(--accent-violet),var(--accent-rose))] bg-clip-text text-transparent">
           before you make your next trade.
         </span>
       </h1>
