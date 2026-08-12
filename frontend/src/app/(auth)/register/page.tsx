@@ -42,7 +42,7 @@ export default function RegisterPage() {
     try {
       const result = await register(email, password);
       await login(result.access_token);
-      router.push("/dashboard");
+      router.push("/");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Could not create account");
     } finally {

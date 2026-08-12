@@ -42,7 +42,7 @@ export default function LoginPage() {
     try {
       const result = await authenticate(email, password);
       await login(result.access_token);
-      router.push("/dashboard");
+      router.push("/");
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Incorrect email or password");
     } finally {
