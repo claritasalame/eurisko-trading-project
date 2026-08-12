@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { getQuote, getStocks } from "@/lib/api";
 import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
 
@@ -21,9 +21,10 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  useEffect(() => {
-    const loadWatchlist = async () => {
-      try {
+  const loadWatchlist = useCallback(async () => {
+    setIsLoading(true);
+    setHasError(false);
+    try {
         const stocks = await getStocks();
         const quotes = await Promise.all(
           stocks.map(async (item) => {
@@ -39,15 +40,16 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
 
         setWatchlist(quotes);
         setHasError(false);
-      } catch {
-        setHasError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadWatchlist();
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadWatchlist();
+  }, [loadWatchlist]);
 
   if (isLoading) {
     return (
@@ -69,7 +71,8 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
   if (hasError) {
     return (
       <aside className="panel h-fit p-3">
-        <p className="text-sm text-[var(--text-muted)]">Couldn&apos;t load quotes right now.</p>
+        <p className="text-sm text-[var(--text-muted)]">Couldn&apos;t load quotes right now. Try again.</p>
+        <button type="button" onClick={() => void loadWatchlist()} className="focus-visible-ring mt-3 rounded-lg border border-[var(--accent-signal)] px-3 py-2 text-sm text-[var(--accent-signal)]">Retry</button>
       </aside>
     );
   }

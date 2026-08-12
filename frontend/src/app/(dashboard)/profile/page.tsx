@@ -27,6 +27,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [status, setStatus] = useState("");
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     if (isAuthLoading || !user) {
@@ -44,14 +45,14 @@ export default function ProfilePage() {
         setInvestmentGoals(profile.investment_goals ?? "");
         setExperienceLevel(profile.experience_level ?? "beginner");
         setHoldings(currentHoldings);
-      } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Could not load profile.");
+      } catch {
+        setStatus("Could not load your profile. Try again.");
       } finally {
         setIsLoading(false);
       }
     };
     void load();
-  }, [isAuthLoading, user]);
+  }, [isAuthLoading, user, reloadCount]);
 
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
@@ -66,8 +67,8 @@ export default function ProfilePage() {
         experience_level: experienceLevel,
       });
       setStatus("Profile saved.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not save profile.");
+    } catch {
+      setStatus("Could not save your profile. Try again.");
     } finally {
       setIsSaving(false);
     }
@@ -87,8 +88,8 @@ export default function ProfilePage() {
       setQuantity("");
       setCostBasis("");
       setStatus("Holding added.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not add holding.");
+    } catch {
+      setStatus("Could not add that holding. Try again.");
     }
   };
 
@@ -98,8 +99,8 @@ export default function ProfilePage() {
       await deleteHolding(userId, holdingId);
       setHoldings((current) => current.filter((holding) => holding.id !== holdingId));
       setStatus("Holding removed.");
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Could not remove holding.");
+    } catch {
+      setStatus("Could not remove that holding. Try again.");
     }
   };
 
@@ -151,7 +152,7 @@ export default function ProfilePage() {
             </section>
           </div>
         )}
-        {status ? <p role="status" className={`mt-4 rounded-lg border px-3 py-2 text-sm ${status === "Profile saved." ? "border-[var(--positive)]/40 bg-[var(--positive)]/10 text-[var(--positive)]" : "border-[var(--border-hairline)] text-[var(--text-muted)]"}`}>{status}</p> : null}
+        {status ? <div role="status" className={`mt-4 rounded-lg border px-3 py-2 text-sm ${status === "Profile saved." ? "border-[var(--positive)]/40 bg-[var(--positive)]/10 text-[var(--positive)]" : "border-[var(--border-hairline)] text-[var(--text-muted)]"}`}><span>{status}</span>{status === "Could not load your profile. Try again." ? <button type="button" onClick={() => setReloadCount((value) => value + 1)} className="focus-visible-ring ml-3 rounded-lg border border-[var(--accent-signal)] px-3 py-1 text-[var(--accent-signal)]">Retry</button> : null}</div> : null}
       </div>
     </main>
   );

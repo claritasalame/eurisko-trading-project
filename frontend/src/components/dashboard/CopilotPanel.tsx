@@ -101,12 +101,8 @@ export function CopilotPanel() {
           })),
       );
       setShowHistory(false);
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Could not open that conversation.",
-      );
+    } catch {
+      setError("Could not open that conversation. Try again.");
     } finally {
       setIsLoading(false);
     }
@@ -154,12 +150,8 @@ export function CopilotPanel() {
         },
       ]);
       await refreshSessions();
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Copilot is unavailable right now.",
-      );
+    } catch {
+      setError("Copilot is unavailable right now. Try again.");
     } finally {
       setIsLoading(false);
     }

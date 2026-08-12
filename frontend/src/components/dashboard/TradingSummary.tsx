@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { getPortfolioSummary, PortfolioSummaryResponse } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { formatPercent, formatPrice } from "@/lib/numbers";
@@ -11,21 +11,21 @@ export function TradingSummary() {
   const [summary, setSummary] = useState<PortfolioSummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    if (!user) {
-      setSummary(null);
-      return;
-    }
+  const loadSummary = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
-    getPortfolioSummary(user.id)
-      .then(setSummary)
-      .catch((reason) =>
-        setError(
-          reason instanceof Error ? reason.message : "Could not load portfolio",
-        ),
-      )
-      .finally(() => setLoading(false));
+    setError("");
+    try {
+      setSummary(await getPortfolioSummary(user.id));
+    } catch {
+      setError("Could not load portfolio.");
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+  useEffect(() => {
+    if (user) void loadSummary();
+  }, [user, loadSummary]);
   const topMover = useMemo(
     () =>
       summary?.holdings.reduce(
@@ -78,8 +78,9 @@ export function TradingSummary() {
   if (error || !summary)
     return (
       <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="panel p-6 text-[var(--negative)]">
-          {error || "Could not load portfolio."}
+        <div className="panel p-6 text-center">
+          <p className="text-sm text-[var(--text-primary)]">Couldn&apos;t load your portfolio. Try again.</p>
+          <button type="button" onClick={() => void loadSummary()} className="focus-visible-ring mt-4 rounded-lg border border-[var(--accent-signal)] px-3 py-2 text-sm text-[var(--accent-signal)]">Retry</button>
         </div>
       </section>
     );
