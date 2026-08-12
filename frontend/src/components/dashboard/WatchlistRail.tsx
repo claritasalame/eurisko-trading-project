@@ -7,8 +7,8 @@ import { formatPercent, formatPrice, isFiniteNumber } from "@/lib/numbers";
 type WatchlistItem = {
   symbol: string;
   company: string;
-  price: number;
-  day_change_percent: number;
+  price: number | null;
+  day_change_percent: number | null;
 };
 
 type WatchlistRailProps = {
@@ -25,21 +25,35 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
     setIsLoading(true);
     setHasError(false);
     try {
-        const stocks = await getStocks();
-        const quotes = await Promise.all(
-          stocks.map(async (item) => {
-            const response = await getQuote(item.symbol);
-            return {
-              symbol: item.symbol,
-              company: item.name ?? item.symbol,
-              price: response.price,
-              day_change_percent: response.day_change_percent,
-            };
-          }),
-        );
+      const stocks = await getStocks();
+      const quoteResults = await Promise.allSettled(
+        stocks.map(async (item) => {
+          const response = await getQuote(item.symbol);
+          return {
+            symbol: item.symbol,
+            company: item.name ?? item.symbol,
+            price: response.price,
+            day_change_percent: response.day_change_percent,
+          };
+        }),
+      );
 
-        setWatchlist(quotes);
-        setHasError(false);
+      const quotes = quoteResults.map((result, index) => {
+        if (result.status === "fulfilled") {
+          return result.value;
+        }
+
+        const stock = stocks[index];
+        return {
+          symbol: stock.symbol,
+          company: stock.name ?? stock.symbol,
+          price: null,
+          day_change_percent: null,
+        };
+      });
+
+      setWatchlist(quotes);
+      setHasError(false);
     } catch {
       setHasError(true);
     } finally {
@@ -94,9 +108,13 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
       ) : (
         <div className="space-y-1">
           {watchlist.map((item) => {
-            const hasChange = isFiniteNumber(item.day_change_percent);
-            const positive = hasChange && item.day_change_percent >= 0;
+            const priceValue = item.price ?? 0;
+            const changeValue = item.day_change_percent ?? 0;
+            const hasChange = isFiniteNumber(changeValue);
+            const positive = hasChange && changeValue >= 0;
             const isSelected = item.symbol === selectedSymbol;
+            const isUnavailable = item.price === null || item.day_change_percent === null;
+
             return (
               <button
                 key={item.symbol}
@@ -110,15 +128,19 @@ export function WatchlistRail({ selectedSymbol, onSelectSymbol }: WatchlistRailP
                       {item.symbol}
                     </span>
                     <span className="font-[family-name:var(--font-data)] text-xs text-[var(--text-muted)]">
-                      {formatPrice(item.price)}
+                      {isUnavailable ? "—" : formatPrice(priceValue)}
                     </span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2 text-[11px]">
                     <span className="truncate text-[var(--text-muted)]">{item.company}</span>
-                    <span className={positive ? "text-[var(--positive)]" : "text-[var(--negative)]"}>
-                      {hasChange ? <span className="mr-1">{positive ? "▲" : "▼"}</span> : null}
-                      {formatPercent(item.day_change_percent)}
-                    </span>
+                    {isUnavailable ? (
+                      <span className="text-[var(--text-muted)]">Unavailable</span>
+                    ) : (
+                      <span className={positive ? "text-[var(--positive)]" : "text-[var(--negative)]"}>
+                        {hasChange ? <span className="mr-1">{positive ? "▲" : "▼"}</span> : null}
+                        {formatPercent(changeValue)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </button>
