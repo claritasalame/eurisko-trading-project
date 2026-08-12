@@ -71,7 +71,21 @@ def fetch_quote(symbol: str) -> dict:
 
     last_close = float(history["Close"].iloc[-1])
     prev_close = float(history["Close"].iloc[-2]) if len(history) > 1 else last_close
-    day_change_percent = round(((last_close - prev_close) / prev_close) * 100, 4) if prev_close else 0.0
+
+    # Guard against NaN values returned by yfinance
+    if math.isnan(last_close):
+        raise ValueError(f"No valid price data for {symbol}")
+
+    if math.isnan(prev_close):
+        # If only previous close is missing (e.g. first trading day), do not fail;
+        # report day_change_percent as None so JSON serializes to null.
+        day_change_percent = None
+    else:
+        # Preserve existing behavior for zero previous close (avoid division by zero)
+        day_change_percent = (
+            round(((last_close - prev_close) / prev_close) * 100, 4) if prev_close else 0.0
+        )
+
     volume = int(history["Volume"].iloc[-1]) if "Volume" in history.columns else None
 
     return {
