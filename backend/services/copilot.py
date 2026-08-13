@@ -11,7 +11,7 @@ from services.portfolio import build_portfolio_snapshot, format_portfolio_contex
 from services.qdrant_client import search_news
 
 
-SYSTEM_PROMPT = """You are a market analysis assistant. Answer only from the supplied news, live quote, and user portfolio context. Do not rely on unstated knowledge or invent facts. If the context is insufficient, clearly say so. Cite the numbered news context item(s) supporting each news-based factual claim using [1], [2], etc. Treat quotes and portfolio calculations as live structured market data and distinguish them from published news. You may reference the user's actual cash, profile, and holdings when relevant. Frame portfolio-specific output as informational and educational analysis, not direct trade instructions. Prefer language such as 'given your risk tolerance and current holdings, this data suggests' rather than 'you should buy'. If the user has not set up a profile, say that plainly rather than guessing. Be concise."""
+SYSTEM_PROMPT = """You are a market analysis assistant. Answer only from the supplied news, live quote, and user portfolio context. Do not rely on unstated knowledge or invent facts. If the context is insufficient, clearly say so. Cite the numbered news context item(s) supporting each news-based factual claim using [1], [2], etc. Treat quotes and portfolio calculations as live structured market data and distinguish them from published news. You may reference the user's actual cash, profile, and holdings when relevant. Frame portfolio-specific output as informational and educational analysis, not direct trade instructions. Prefer language such as 'given your risk tolerance and current holdings, this data suggests' rather than 'you should buy'. If the user has not set up a profile, say that plainly rather than guessing. Be concise. If the user's message is a greeting or general chit-chat with no market-related question, respond briefly and naturally without forcing in unrelated news or data."""
 
 
 def build_context_prompt(
@@ -93,6 +93,56 @@ def answer_query(query: str, symbol: str | None, db: Session, user_id=None) -> d
     if not OPENAI_API_KEY:
         raise ValueError("OPENAI_API_KEY is not configured.")
 
+    # Small-talk detection: skip news/quote retrieval for simple greetings with no market signal
+    is_small_talk = False
+    if not symbol:  # No explicit symbol requested
+        words = query.strip().split()
+        # Check if query is short (under ~6 words)
+        if len(words) <= 6:
+            # Check if text contains any finance-relevant signals
+            query_lower = query.lower()
+            finance_keywords = {
+                "stock", "price", "market", "buy", "sell", "portfolio", "news",
+                "chart", "trend", "volume", "bid", "ask", "earnings", "dividend",
+                "trade", "invest", "bullish", "bearish", "rally", "crash"
+            }
+            has_finance_keyword = any(keyword in query_lower for keyword in finance_keywords)
+            has_digit = any(c.isdigit() for c in query)
+            has_dollar_sign = "$" in query
+            
+            # If no finance signals detected, treat as small talk
+            if not (has_finance_keyword or has_digit or has_dollar_sign):
+                is_small_talk = True
+
+    if is_small_talk:
+        # For small talk: skip embedding, news search, and quote fetch
+        # Build a minimal prompt with just the user message
+        minimal_prompt = (
+            f"User message: {query}\n\n"
+            "Respond briefly and naturally. You can help with market and trading questions when the user is ready."
+        )
+        user_context = build_user_context(user_id, db) if user_id is not None else None
+        conversation_context = build_conversation_context(user_id, db) if user_id is not None else None
+        
+        if user_context:
+            minimal_prompt += f"\n\nUser profile and portfolio context:\n{user_context}"
+        if conversation_context:
+            minimal_prompt += f"\n\nPrior conversation context:\n{conversation_context}"
+        
+        client = OpenAI(api_key=OPENAI_API_KEY)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": minimal_prompt},
+            ],
+            temperature=0.2,
+        )
+        answer = response.choices[0].message.content or "I don't have enough information to answer that."
+        
+        return {"answer": answer, "sources": [], "quote": None}
+
+    # Standard path: perform full context retrieval for market-related queries
     normalized_symbol = symbol.upper() if symbol else None
     query_vector = embed_text(query)
     news_items = search_news(query_vector, symbol=normalized_symbol, top_k=5)

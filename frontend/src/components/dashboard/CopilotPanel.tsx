@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/lib/auth-context";
 import {
   ChatSessionListResponse,
@@ -41,9 +42,15 @@ const initialMessages: Message[] = [
 ];
 
 function relativeTime(value: string) {
+  // Normalize timezone-less ISO strings to UTC by appending "Z" if needed
+  let normalizedValue = value;
+  if (!normalizedValue.endsWith("Z") && !normalizedValue.match(/[+-]\d{2}:\d{2}$/)) {
+    normalizedValue += "Z";
+  }
+
   const seconds = Math.max(
     0,
-    Math.floor((Date.now() - new Date(value).getTime()) / 1000),
+    Math.floor((Date.now() - new Date(normalizedValue).getTime()) / 1000),
   );
   if (seconds < 60) return "Just now";
   const minutes = Math.floor(seconds / 60);
@@ -360,9 +367,9 @@ export function CopilotPanel() {
                           </span>
                         </div>
                       ) : null}
-                      <span className="whitespace-pre-wrap">
-                        {message.content}
-                      </span>
+                      <div className="prose prose-sm max-w-none break-words text-sm text-[var(--text-primary)]">
+                        <ReactMarkdown>{message.content}</ReactMarkdown>
+                      </div>
                       {message.sources?.length ? (
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {message.sources.map((source) => (
@@ -414,7 +421,7 @@ export function CopilotPanel() {
                 />
                 <button
                   type="button"
-                  className="focus-visible-ring rounded-lg bg-[var(--accent-signal)] px-4 py-2 text-sm font-semibold text-[var(--bg-base)]"
+                  className="focus-visible-ring min-w-[88px] rounded-lg bg-[var(--accent-signal)] px-4 py-2 text-center text-sm font-semibold text-[var(--bg-base)]"
                   onClick={() => sendMessage(input)}
                   disabled={isLoading}
                 >
