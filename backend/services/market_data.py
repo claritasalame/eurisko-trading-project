@@ -10,7 +10,7 @@ from models import MarketData, NewsArticle
 from services.embeddings import chunk_article, embed_text
 from services.qdrant_client import upsert_news_embedding
 
-WATCHLIST_SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"]
+WATCHLIST_SYMBOLS = ["AAPL", "MSFT", "NVDA", "TSLA", "GOOGL", "AMZN", "META", "BTC-USD", "GC=F", "EURUSD=X", "^GSPC"]
 MARKET_INDICES = {
     "^GSPC": "S&P 500",
     "^IXIC": "Nasdaq Composite",

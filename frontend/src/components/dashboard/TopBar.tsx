@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { AccountMenu } from "@/components/auth/AccountMenu";
 import { getStocks, StockResponse } from "@/lib/api";
@@ -44,7 +45,7 @@ export function TopBar({ selectedSymbol, onSelectSymbol }: TopBarProps) {
 
   return (
     <header className="panel sticky top-0 z-30 flex flex-wrap items-center gap-3 px-4 py-3">
-      <div className="flex min-w-fit items-center gap-3">
+      <Link href="/" className="flex min-w-fit items-center gap-3 cursor-pointer">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--accent-signal)]/50 bg-[var(--bg-surface-raised)] text-sm font-semibold text-[var(--accent-signal)]">
           M
         </div>
@@ -53,7 +54,7 @@ export function TopBar({ selectedSymbol, onSelectSymbol }: TopBarProps) {
             MARKETMIND
           </p>
         </div>
-      </div>
+      </Link>
 
       <div className="relative flex-1 min-w-[260px]">
         <label className="sr-only" htmlFor="ticker-search">
